@@ -1049,111 +1049,110 @@ server <- function(input, output, session) {
 
   ### 2.3.5 National map ----
   #### 2.3.5.1 Dropdown area select----
-  output$geoChoice <- renderUI({
-    selectizeInput(
-      "geoChoice",
-      multiple = FALSE,
-      label = NULL,
-      choices = areaChoices[1:3],
-      selected = input$geoChoiceOver
-    )
-  })
 
-  observeEvent(input$map_shape_click, {
-    updateSelectizeInput(session, "geoChoice",
-      selected = C_Geog$geogConcat[C_Geog$areaCode == input$map_shape_click$id]
-    )
-  })
-
-  observeEvent(input$geoChoiceOver, {
-    updateSelectizeInput(session, "geoChoice",
-      selected = input$geoChoiceOver
-    )
-  })
-
-  observeEvent(input$geoChoice, {
-    updateRadioGroupButtons(session, "splashGeoType",
-      selected = gsub(" ", "", str_sub(input$geoChoice, -4, -1))
-    )
-  })
-  #### 2.3.5.1 Title ----
-  output$titleMap <- renderUI({
-    paste0("Where does ", input$geoChoice, " fit in the national picture?")
-  })
-
-  #### 2.3.5.2 Comment ----
-  output$commentMap <- renderUI({
-    validate(
-      need("geoChoice" %in% names(input), ""),
-      need(input$geoChoice != "", "")
-    )
-    compareNational <-
-      if ((C_Geog %>%
-        filter(geogConcat == input$geoChoice))[[input$splashMetric]]
-      >
-        (englandGeog)[[input$splashMetric]]) {
-        "higher"
-      } else {
-        "lower"
-      }
-    areaRank <- (geogRank() %>%
-      filter(geogConcat == input$geoChoice))$ranking
-    suff <- case_when(
-      areaRank %in% c(11, 12, 13) ~ "th",
-      areaRank %% 10 == 1 ~ "st",
-      areaRank %% 10 == 2 ~ "nd",
-      areaRank %% 10 == 3 ~ "rd",
-      TRUE ~ "th"
-    )
-    paste0(
-      (I_DataText %>% filter(metric == input$splashMetric))$mapComment, " in ",
-      input$geoChoice,
-      if (str_sub(input$splashMetric, start = -4) == "Rate" | input$splashMetric == "employmentProjection" | str_sub(input$splashMetric, start = -10) == "population") {
-        paste0(
-          " is ",
-          compareNational,
-          " than the national average. It"
-        )
-      } else {},
-      " is ranked ",
-      areaRank,
-      suff,
-      " of the ",
-      groupCount()
-    )
-  })
+# 
+#   observeEvent(input$map_shape_click, {
+#     updateSelectizeInput(session, "geoChoice",
+#       selected = C_Geog$geogConcat[C_Geog$areaCode == input$map_shape_click$id]
+#     )
+#   })
+# 
+#   observeEvent(input$geoChoiceOver, {
+#     updateSelectizeInput(session, "geoChoice",
+#       selected = input$geoChoiceOver
+#     )
+#   })
+# 
+#   observeEvent(input$geoChoice, {
+#     updateRadioGroupButtons(session, "splashGeoType",
+#       selected = gsub(" ", "", str_sub(input$geoChoice, -4, -1))
+#     )
+#   })
+#   #### 2.3.5.1 Title ----
+#   output$titleMap <- renderUI({
+#     paste0("Where does ", input$geoChoice, " fit in the national picture?")
+#   })
+# 
+#   #### 2.3.5.2 Comment ----
+#   output$commentMap <- renderUI({
+#     validate(
+#       need("geoChoice" %in% names(input), ""),
+#       need(input$geoChoice != "", "")
+#     )
+#     compareNational <-
+#       if ((C_Geog %>%
+#         filter(geogConcat == input$geoChoice))[[input$splashMetric]]
+#       >
+#         (englandGeog)[[input$splashMetric]]) {
+#         "higher"
+#       } else {
+#         "lower"
+#       }
+#     areaRank <- (geogRank() %>%
+#       filter(geogConcat == input$geoChoice))$ranking
+#     suff <- case_when(
+#       areaRank %in% c(11, 12, 13) ~ "th",
+#       areaRank %% 10 == 1 ~ "st",
+#       areaRank %% 10 == 2 ~ "nd",
+#       areaRank %% 10 == 3 ~ "rd",
+#       TRUE ~ "th"
+#     )
+#     paste0(
+#       (I_DataText %>% filter(metric == input$splashMetric))$mapComment, " in ",
+#       input$geoChoice,
+#       if (str_sub(input$splashMetric, start = -4) == "Rate" | input$splashMetric == "employmentProjection" | str_sub(input$splashMetric, start = -10) == "population") {
+#         paste0(
+#           " is ",
+#           compareNational,
+#           " than the national average. It"
+#         )
+#       } else {},
+#       " is ranked ",
+#       areaRank,
+#       suff,
+#       " of the ",
+#       groupCount()
+#     )
+#   })
 
   #### 2.3.5.3 Map ----
+  mapAllYears <- reactive({
+    C_Geog %>%filter(geog == input$splashGeoType)%>%
+      left_join(C_mapData %>% filter(subgroup==input$socChoice),
+                by = c("geogConcat" = "geogConcat")
+      )
+  })
+  
   output$map <- renderLeaflet({
-    validate(
-      need(input$geoChoice != "", ""),
-      need(input$splashGeoType != "", "")
-    )
-    mapData <- C_Geog %>% filter(geog == input$splashGeoType)
-    pal <- colorNumeric("Blues", mapData[[input$splashMetric]])
+    # validate(
+    #   need(input$geoChoice != "", ""),
+    #   need(input$splashGeoType != "", "")
+    # )
+    mapData <-mapAllYears()  %>% filter(chartPeriod== input$timeChoice)
+    pal <- colorNumeric("Blues", mapData$value)
     labels <-
       # if a percentage then format as %, else big number
-      if (str_sub(input$splashMetric, start = -4) == "Rate" | input$splashMetric == "employmentProjection") {
-        sprintf(
-          "<strong>%s</strong><br/>%s: %s%%",
-          mapData$areaName,
-          (I_DataText %>% filter(metric == input$splashMetric))$mapPop,
-          round(mapData[[input$splashMetric]] * 100)
-        ) %>% lapply(htmltools::HTML)
-      } else {
-        sprintf(
-          "<strong>%s</strong><br/>%s: %s",
-          mapData$areaName,
-          (I_DataText %>% filter(metric == input$splashMetric))$mapPop,
-          format(round(mapData[[input$splashMetric]]), big.mark = ",")
-        ) %>% lapply(htmltools::HTML)
-      }
+      # if (
+       # str_sub(input$splashMetric, start = -4) == "Rate" | input$splashMetric == "employmentProjection") {
+   #     sprintf(
+      #    "<strong>%s</strong><br/>%s: %s%%",
+          paste0(mapData$areaName,": ",
+                 format(round(mapData$value * 100), big.mark = ","))
+       # ) %>% lapply(htmltools::HTML)
+      # } else {
+      #   sprintf(
+      #     "<strong>%s</strong><br/>%s: %s",
+      #     mapData$areaName,
+      #     (I_DataText %>% filter(metric == input$splashMetric))$mapPop,
+      #     format(round(mapData[[input$splashMetric]]), big.mark = ",")
+      #   ) %>% lapply(htmltools::HTML)
+      # }
 
     leaflet(options = leafletOptions(zoomSnap = 0.1)) %>%
       addProviderTiles(providers$CartoDB.Positron) %>%
       addPolygons(
         data = mapData,
-        fillColor = ~ pal(mapData[[input$splashMetric]]),
+        fillColor = ~ pal(value),
         color = "black",
         layerId = ~areaCode,
         weight = 1,
@@ -1174,42 +1173,42 @@ server <- function(input, output, session) {
         zoom = 5.7
       )
   })
-  observe({
-    validate(need("geoChoice" %in% names(input), ""))
-    mapData <- C_Geog %>% filter(geogConcat == input$geoChoice)
-    labels <-
-      # if a percentage then format as %, else big number
-      if (str_sub(input$splashMetric, start = -4) == "Rate" | input$splashMetric == "employmentProjection") {
-        sprintf(
-          "<strong>%s</strong><br/>%s: %s%%",
-          mapData$areaName,
-          (I_DataText %>% filter(metric == input$splashMetric))$mapPop,
-          round(mapData[[input$splashMetric]] * 100)
-        ) %>% lapply(htmltools::HTML)
-      } else {
-        sprintf(
-          "<strong>%s</strong><br/>%s: %s",
-          mapData$areaName,
-          (I_DataText %>% filter(metric == input$splashMetric))$mapPop,
-          format(round(mapData[[input$splashMetric]]), big.mark = ",")
-        ) %>% lapply(htmltools::HTML)
-      }
-    proxy <- leafletProxy("map")
-    addPopups(
-      proxy,
-      lng = C_Geog$LONG[C_Geog$geogConcat == input$geoChoice],
-      lat = C_Geog$LAT[C_Geog$geogConcat == input$geoChoice],
-      popup = labels,
-      layerId = "popup",
-      options = popupOptions(
-        className = "myspecial-popup",
-        textsize = "12px",
-        direction = "auto",
-        closeOnClick = TRUE,
-        closeButton = FALSE
-      )
-    )
-  })
+  # observe({
+  #   #validate(need("geoChoice" %in% names(input), ""))
+  #   mapData <- C_Geog %>% filter(geogConcat == input$geoChoice)
+  #   labels <-
+  #     # if a percentage then format as %, else big number
+  #     if (str_sub(input$splashMetric, start = -4) == "Rate" | input$splashMetric == "employmentProjection") {
+  #       sprintf(
+  #         "<strong>%s</strong><br/>%s: %s%%",
+  #         mapData$areaName,
+  #         (I_DataText %>% filter(metric == input$splashMetric))$mapPop,
+  #         round(mapData[[input$splashMetric]] * 100)
+  #       ) %>% lapply(htmltools::HTML)
+  #     } else {
+  #       sprintf(
+  #         "<strong>%s</strong><br/>%s: %s",
+  #         mapData$areaName,
+  #         (I_DataText %>% filter(metric == input$splashMetric))$mapPop,
+  #         format(round(mapData[[input$splashMetric]]), big.mark = ",")
+  #       ) %>% lapply(htmltools::HTML)
+  #     }
+  #   proxy <- leafletProxy("map")
+  #   addPopups(
+  #     proxy,
+  #     lng = C_Geog$LONG[C_Geog$geogConcat == input$geoChoice],
+  #     lat = C_Geog$LAT[C_Geog$geogConcat == input$geoChoice],
+  #     popup = labels,
+  #     layerId = "popup",
+  #     options = popupOptions(
+  #       className = "myspecial-popup",
+  #       textsize = "12px",
+  #       direction = "auto",
+  #       closeOnClick = TRUE,
+  #       closeButton = FALSE
+  #     )
+  #   )
+  # })
 
   #### 2.3.5.4 Map footnote ----
   output$mapFoot <- renderUI({
@@ -1401,59 +1400,37 @@ server <- function(input, output, session) {
   })
 
   #### 2.3.7.2 Chart ----
-  Splash_time <-
+  occTime <-
     eventReactive(
       c(
-        input$map_shape_click,
-        input$geoChoice,
-        input$mapLA_shape_click,
-        input$geoComps,
-        input$splashMetric
+        input$socChoice,input$profChoice
       ),
       {
         SplashTime <- C_time %>%
           filter(
-            # get lep/lsip/mca areas
-            (geogConcat == input$geoChoice | geogConcat %in% if ("geoComps" %in% names(input)) {
-              input$geoComps
-            } else {
-              "\nNone"
-            }) |
-              # get england for comparison (if a rate)
-              (if (str_sub(input$splashMetric, start = -4) == "Rate" | str_sub(input$splashMetric, start = -10) == "population" | input$splashMetric == "employmentProjection") {
-                (geogConcat == "England")
-              } else {
-                geogConcat == "\nNone"
-              }),
-            metric == input$splashMetric
+            subgroup  %in% input$socChoice | subgroup  %in% input$profChoice,
+            metric %in% c('Employment')
           )
-        # add an extra column so the colours work in ggplot when sorting alphabetically
-        SplashTime$Areas <- factor(SplashTime$geogConcat,
-          levels = c("England", input$geoChoice, input$geoComps) # paste0(laClicked()," LADU"),
-        )
+        # # add an extra column so the colours work in ggplot when sorting alphabetically
+        # SplashTime$Areas <- factor(SplashTime$geogConcat,
+        #   levels = c("England", input$geoChoice, input$geoComps) # paste0(laClicked()," LADU"),
+        # )
 
         ggplot(
           SplashTime,
           aes(
             x = as.Date(timePeriod),
             y = value,
-            color = Areas,
-            group = Areas,
+            color =  metric,
+            group = interaction(metric, subgroup),
             text = paste0(
               "Period: ",
               chartPeriod,
               "<br>",
-              "Area: ",
-              Areas,
+              metric,": ",
+              subgroup,
               "<br>",
-              currentMetric(),
-              ": ",
-              if (str_sub(input$splashMetric, start = -4) == "Rate" | input$splashMetric == "employmentProjection") {
-                scales::percent(round(value, 3))
-              } else {
-                format(round(value), big.mark = ",")
-              },
-              "<br>"
+              value
             )
           )
         ) +
@@ -1465,17 +1442,13 @@ server <- function(input, output, session) {
             legend.position = "bottom",
             legend.title = element_blank()
           ) +
-          scale_y_continuous(labels = if (str_sub(input$splashMetric, start = -4) == "Rate" | input$splashMetric == "employmentProjection") {
-            scales::percent
-          } else {
-            label_number(accuracy = 1, scale_cut = cut_short_scale())
-          }) +
+          scale_y_continuous(labels =
+            label_number(accuracy = 0.1, scale_cut = cut_short_scale())
+          ) +
           labs(colour = "") +
-          scale_color_manual(values = if (str_sub(input$splashMetric, start = -4) == "Rate" | str_sub(input$splashMetric, start = -10) == "population" | input$splashMetric == "employmentProjection") {
-            chartColors6
-          } else {
+          scale_color_manual(values =
             chartColors5
-          }) +
+          ) +
           scale_x_date(
             name = "My date axis title",
             date_breaks = "1 years",
@@ -1484,12 +1457,11 @@ server <- function(input, output, session) {
       }
     )
 
-  output$Splash_time <- renderPlotly({
-    validate(
-      need("geoChoice" %in% names(input), ""),
-      need(input$geoChoice != "", "")
-    )
-    ggplotly(Splash_time(), tooltip = "text") %>%
+  output$occTime <- renderPlotly({
+    # validate(
+    #   need(input$socChoice != "" |input$profChoice != "", "")
+    # )
+    ggplotly(occTime(), tooltip = "text") %>%
       layout(
         legend = list(
           orientation = "h",
