@@ -8,6 +8,7 @@ C_topTenEachBreakdown <- read.csv(file = "./Data/AppData/C_topTenEachBreakdown.c
 C_datahub <- read.csv(file = "./Data/AppData/C_datahub.csv", check.names = FALSE)
 C_axisMinMax <- read.csv(file = "./Data/AppData/C_axisMinMax.csv", check.names = FALSE)
 C_mapData <- read.csv(file = "./Data/AppData/C_mapData.csv", check.names = FALSE)
+C_table <- read.csv(file = "./Data/AppData/C_table.csv", check.names = FALSE)
 
 ## Intervention table ----
 # I_InterventionTable <- read.csv(file = "./Data/AppData/I_InterventionTable.csv", check.names = FALSE)

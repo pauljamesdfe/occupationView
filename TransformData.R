@@ -48,6 +48,12 @@ neatLEP <- I_mapLEP %>%
   mutate(geog = "LEP") %>% # add geog type
   rename(areaCode = LEP21CD, areaName = LEP21NM) # consistent naming
 
+neatRegion <- I_mapRegion %>%
+  mutate(geog = "Region",geogConcat=RGN22NM
+         ,geogConcat=case_when(geogConcat=="East of England" ~ "East"
+                               ,TRUE ~ geogConcat)) %>% # match to employment data
+  rename(areaCode = RGN22CD, areaName = RGN22NM) # consistent naming
+
 addEngland <- data.frame(
   areaName = "England", areaCode = "x",
   geog = "COUNTRY"
@@ -151,14 +157,133 @@ formatNomis <- function(x) {
 
 ## 2.2 Employment by occupation ----
 # convert into format used in dashboard
-C_empOcc <- formatNomis(I_empOcc) %>%
-  rename(subgroup = CELL_NAME) %>%
-  mutate(subgroup = gsub("[[:digit:]]+", "", subgroup)) %>%
-  mutate(subgroup = gsub(" \\(SOC\\) : All people \\)", "", subgroup)) %>%
-  mutate(subgroup = gsub("Ta: \\(All people - ", "", subgroup)) %>%
-  mutate(valueText = as.character(value)) %>%
-  mutate(breakdown = "Occupation", metric = "inemployment")
-# 
+C_empOcc2010 <- formatNomis(I_empOcc2010) %>%
+  filter(MEASURES_NAME=="Value",MEASURE_NAME=="Count")%>%
+  mutate(breakdown=case_when(C_SEX_NAME=="All persons" & C_OCCPUK11H_0_NAME=="Total" ~ "Total"
+                            # ,C_SEX_NAME=="All persons" & C_OCCPUK11H_0_NAME!="Total" ~ paste(C_OCCPUK11H_0_TYPE,"SOC2010")
+                             ,C_SEX_NAME!="All persons" & C_OCCPUK11H_0_NAME=="Total" ~ "Sex"
+                             ,TRUE ~ paste(C_OCCPUK11H_0_TYPE,"SOC2010"))
+         ,subgroup=case_when(C_SEX_NAME=="All persons" & C_OCCPUK11H_0_NAME=="Total" ~ "Total"
+                                     # ,C_SEX_NAME=="All persons" & C_OCCPUK11H_0_NAME!="Total" ~ C_OCCPUK11H_0_NAME
+                                      ,C_SEX_NAME!="All persons" & C_OCCPUK11H_0_NAME=="Total" ~ C_SEX_NAME
+                                      ,TRUE ~ C_OCCPUK11H_0_NAME)
+        ,breakdown2=case_when(C_SEX_NAME!="All persons" & C_OCCPUK11H_0_NAME!="Total" ~ "Sex",
+                              TRUE ~ "Total")
+        ,subgroup2=case_when(C_SEX_NAME!="All persons" & C_OCCPUK11H_0_NAME!="Total" ~ C_SEX_NAME,
+                              TRUE ~ "Total")
+         ,metric = "Employed"
+         ,valueText = as.character(value)
+         ,subgroup = trimws(gsub("[[:digit:]]+", "", subgroup))
+         ,SOC2010code=as.numeric(sub( " .*$", "", C_OCCPUK11H_0_NAME))
+         ,latest=case_when(chartPeriod=="Jan 2020-Dec 2020" ~ 1
+                           ,chartPeriod=="Jan 2019-Dec 2019" ~ -1
+                           ,TRUE ~ 0)     #doing this to get the data in the table to be 2020 to matchthe earnings data             
+        )%>%
+  select(geogConcat,chartPeriod,timePeriod,latest,metric,breakdown,subgroup,breakdown2,subgroup2,value,valueText)
+
+#soc2020
+F_empOcc2020 <- formatNomis(I_empOcc2020) %>%
+  filter(MEASURES_NAME=="Value",MEASURE_NAME=="Count")%>%
+  mutate(breakdown=case_when(C_SEX_NAME=="All persons" & SOC2020_FULL_NAME=="Total" ~ "Total"
+                             # ,C_SEX_NAME=="All persons" & C_OCCPUK11H_0_NAME!="Total" ~ paste(C_OCCPUK11H_0_TYPE,"SOC2010")
+                             ,C_SEX_NAME!="All persons" & SOC2020_FULL_NAME=="Total" ~ "Sex"
+                             ,TRUE ~ paste(SOC2020_FULL_TYPE,"SOC2020"))
+         ,subgroup=case_when(C_SEX_NAME=="All persons" & SOC2020_FULL_NAME=="Total" ~ "Total"
+                             # ,C_SEX_NAME=="All persons" & C_OCCPUK11H_0_NAME!="Total" ~ C_OCCPUK11H_0_NAME
+                             ,C_SEX_NAME!="All persons" & SOC2020_FULL_NAME=="Total" ~ C_SEX_NAME
+                             ,TRUE ~ SOC2020_FULL_NAME)
+         ,breakdown2=case_when(C_SEX_NAME!="All persons" & SOC2020_FULL_NAME!="Total" ~ "Sex",
+                               TRUE ~ "Total")
+         ,subgroup2=case_when(C_SEX_NAME!="All persons" & SOC2020_FULL_NAME!="Total" ~ C_SEX_NAME,
+                              TRUE ~ "Total")
+         ,metric = "Employed"
+         ,subgroup = gsub("[[:digit:]]+", "", subgroup)
+         ,subgroup = trimws(gsub(":","", subgroup))
+         ,SOC2020code=as.numeric(sub( " .*$", "", SOC2020_FULL_NAME))
+  )%>%
+  select(geogConcat,chartPeriod,timePeriod,metric,latest,breakdown,subgroup,breakdown2,subgroup2,value,SOC2020code)
+
+C_empOcc2020<-F_empOcc2020%>%
+  #add on sectors
+  bind_rows(F_empOcc2020%>%
+              inner_join(I_stemLookup)%>%
+              filter(subgroup!="Total")%>%
+              group_by(geogConcat,chartPeriod,timePeriod,latest,metric,breakdown,breakdown2,subgroup2)%>%
+              summarise(value=sum(value,na.rm = TRUE))%>%
+              mutate(subgroup="Science and tech"))%>%
+  mutate(valueText = as.character(value))%>%
+  select(-SOC2020code)
+
+## 2.3 Ashe earnings ----
+cleanAshe <- function(dataset,year,breakdownName,subgroupName) {
+  dataset%>%
+    row_to_names(4)%>%
+    clean_names()%>%
+    mutate(chartPeriod=year,breakdown2=breakdownName,subgroup2=subgroupName)
+}
+
+F_ashe<-bind_rows(cleanAshe(I_ashe17,2017,"Total","Total")
+                  ,cleanAshe(I_ashe18,2018,"Total","Total")
+                  ,cleanAshe(I_ashe19,2019,"Total","Total")
+                  ,cleanAshe(I_ashe20,2020,"Total","Total")
+                  ,cleanAshe(I_ashe21,2021,"Total","Total")
+                  ,cleanAshe(I_ashe22,2022,"Total","Total")
+                  
+                  ,cleanAshe(I_asheMale17,2017,"Sex","Males")
+                  ,cleanAshe(I_asheMale18,2018,"Sex","Males")
+                  ,cleanAshe(I_asheMale19,2019,"Sex","Males")
+                  ,cleanAshe(I_asheMale20,2020,"Sex","Males")
+                  ,cleanAshe(I_asheMale21,2021,"Sex","Males")
+                  ,cleanAshe(I_asheMale22,2022,"Sex","Males")
+                  
+                  ,cleanAshe(I_asheFemale17,2017,"Sex","Females")
+                  ,cleanAshe(I_asheFemale18,2018,"Sex","Females")
+                  ,cleanAshe(I_asheFemale19,2019,"Sex","Females")
+                  ,cleanAshe(I_asheFemale20,2020,"Sex","Females")
+                  ,cleanAshe(I_asheFemale21,2021,"Sex","Females")
+                  ,cleanAshe(I_asheFemale22,2022,"Sex","Females")
+                  )%>%
+  mutate(breakdown=case_when(chartPeriod>=2021 ~ paste0(nchar(code),"-digit occupation SOC2020")
+                             ,TRUE ~ paste0(nchar(code),"-digit occupation SOC2010")
+                             )
+         ,SOC2020code=case_when(chartPeriod>=2021 ~ as.integer(code)
+                             ,TRUE ~ NA
+         )
+         )%>%
+  select(breakdown,subgroup=description, breakdown2,subgroup2,valueText=mean,population=thousand,chartPeriod,SOC2020code)%>%
+  mutate(timePeriod=as.Date(paste("01 Jan", substr(chartPeriod, 1, 4), sep = ""), format = "%d %b %Y")
+         ,geogConcat="England"
+         ,metric="Earnings"
+         ,latest=case_when(
+                timePeriod == max(timePeriod) ~ 1,
+                timePeriod == (max(timePeriod) - years(1)) ~ -1,
+                chartPeriod=="2020"~1,
+                chartPeriod=="2019"~-1,#These are for soc2010
+                TRUE ~ 0
+              )
+         ,chartPeriod=as.character(chartPeriod)
+         ,value=as.numeric(valueText)
+         ,population=as.numeric(population)
+         ,breakdown=case_when((subgroup=="All employees"&chartPeriod>=2021) ~ "4-digit occupation SOC2020"
+                              ,(subgroup=="All employees"&chartPeriod<2021) ~ "4-digit occupation SOC2010"
+                              ,TRUE ~ breakdown)
+         ,subgroup=case_when(subgroup=="All employees" ~ "Total", TRUE ~ subgroup)
+         )%>%
+  filter(breakdown!="NA-digit occupation SOC2020",
+         breakdown!="NA-digit occupation SOC2010")#get rid of footnotes
+
+#add on sectors
+C_ashe<-F_ashe%>%
+bind_rows(F_ashe%>%
+            inner_join(I_stemLookup)%>%
+           # filter(subgroup=="Total")%>%
+            mutate(sumPopMean=population*value)%>%
+            group_by(geogConcat,chartPeriod,timePeriod,latest,metric,breakdown,breakdown2,subgroup2)%>%
+            summarise(value=sum(sumPopMean,na.rm = TRUE)/sum(population,na.rm = TRUE))%>%
+            mutate(subgroup="Science and tech"))%>%
+  mutate(valueText = as.character(value))%>%
+  select(-SOC2020code)
+
 # ## 2.3 Employment by industry ----
 # C_empInd <- formatNomis(I_empInd) %>%
 #   rename(subgroup = CELL_NAME) %>%
@@ -416,7 +541,7 @@ C_empOcc <- formatNomis(I_empOcc) %>%
 #   ) %>%
 #   mutate(value = as.numeric(valueText))
 
-## 2.8 Skills imperative 2035 ----
+# 2.8 Skills imperative 2035 ----
 employmentProjections <-
   # bind_rows(
   #bind_rows(
@@ -443,9 +568,9 @@ employmentProjections <-
       mutate(
         metric = "employmentProjection",
         breakdown = case_when(
-          grepl("[0-9]", subgroup) == TRUE ~ "Occupation (SOC2020 submajor)",
+          grepl("[0-9]", subgroup) == TRUE ~ "2-digit occupation SOC2020",
           subgroup == "All occupations" ~ "Total",
-          TRUE ~ "Occupation (SOC2020 major)"
+          TRUE ~ "1-digit occupation SOC2020"
         ),
         subgroup = case_when(
           subgroup == "All occupations" ~ "Total",
@@ -839,7 +964,8 @@ C_adverts <- bind_rows(
 # 3. Combine datasets ----
 C_localSkillsDataset <- bind_rows(
   #C_emp,
-  C_empOcc,
+  C_empOcc2010%>%mutate(source="SOC2010"),
+  C_empOcc2020%>%mutate(source="SOC2020"),
   #C_empInd,
   # C_entSize,
   # C_entInd,
@@ -851,7 +977,9 @@ C_localSkillsDataset <- bind_rows(
   #C_destinations,
   C_adverts
   #,C_businesses
-)
+  ,C_ashe
+)%>%
+  filter(!geogConcat %in% c("Northern Ireland","Scotland","Wales"))
 ## add in GLA as an MCA
 C_localSkillsDataset <- bind_rows(
   C_localSkillsDataset # %>%
@@ -873,18 +1001,21 @@ dashboardMetricIgnore <- c("all", "economicallyactive", "employees", "starts_rat
 
 ## 4.2 C_Geog ----
 # This is used in the maps. It contains only the latest total data for each metric and area.
-C_Geog <- neatGeog %>%
-  filter(geog!="LA")
+C_Geog <- neatRegion
   save(C_Geog, file = "Data\\AppData\\C_Geog.rdata")
 C_mapData<-C_localSkillsDataset %>%
-       filter(breakdown %in% c('Occupation','Occupation (SOC2020 submajor)','Summary Profession Category','Total')
-              ,geogConcat!="England"
-              ,metric %in% c('inemployment','employmentProjection','vacancies'))%>%
-       mutate(metric=case_when(metric=="inemployment" ~ "Employment"
-                               ,metric=="employmentProjection" ~ "Jobs"
-                               ,metric=="vacancies" ~ "Online job adverts"
-                               ,TRUE ~ metric))%>%
-       mutate(subgroup=str_to_sentence(subgroup))%>%
+       filter(#breakdown %in% c('Occupation','Occupation (SOC2020 submajor)','Summary Profession Category','Total')
+              geogConcat!="England"
+              ,metric %in% c('Employed')#'vacancies',,'employmentProjection','Earnings'
+              ,breakdown %in% c("4-digit occupation SOC2020","4-digit occupation SOC2010","Total")
+              ,breakdown2=="Total")%>%
+  mutate(breakdown=case_when(breakdown== "Total" & source=="SOC2020" ~ "4-digit occupation SOC2020"
+                             ,breakdown== "Total" & source=="SOC2010" ~ "4-digit occupation SOC2010"
+                             ,TRUE ~ breakdown))%>%
+       # mutate(metric=case_when(metric=="employmentProjection" ~ "Jobs"
+       #                         ,metric=="vacancies" ~ "Online job adverts"
+       #                         ,TRUE ~ metric))%>%
+       #mutate(subgroup=str_to_sentence(subgroup))%>%
        
        
       # filter(
@@ -892,23 +1023,138 @@ C_mapData<-C_localSkillsDataset %>%
       #   metric != "employmentProjectionAnnualGrowth", # the maps use the employmentProjectionGrowth2023to2035 metric
       #   !metric %in% dashboardMetricIgnore # remove metrics not used
       #) %>%
-      select(chartPeriod,subgroup,value, metric, geogConcat)# %>%
+      select(chartPeriod,breakdown,subgroup,value, metric, geogConcat)# %>%
      # pivot_wider(names_from = metric, values_from = value)
 write.csv(C_mapData, file = "Data\\AppData\\C_mapData.csv", row.names = FALSE)
 
 # 4.2 C_time ----
 #This is used in the line charts and KPIs. It contains historic data for each metric and area.
 C_time <- C_localSkillsDataset %>%
-  filter(breakdown %in% c('Occupation','Occupation (SOC2020 submajor)','Summary Profession Category','Total')
+  filter(#breakdown %in% c('Occupation','Occupation (SOC2020 submajor)','Summary Profession Category','Total')
          ,geogConcat=="England"
-         ,metric %in% c('inemployment'))%>%#,'employmentProjection','vacancies'
-  mutate(metric=case_when(metric=="inemployment" ~ "Employment"
-                          ,metric=="employmentProjection" ~ "Jobs"
+         ,metric %in% c('Employed','employmentProjection','vacancies','Earnings')
+         )%>%#
+  mutate(metric=case_when(metric=="employmentProjection" ~ "Jobs"
                           ,metric=="vacancies" ~ "Online job adverts"
                           ,TRUE ~ metric))%>%
   mutate(subgroup=str_to_sentence(subgroup))
 
   write.csv(C_time, file = "Data\\AppData\\C_time.csv", row.names = FALSE)
+  # 4.3 C_table ----  
+  Employment<-C_localSkillsDataset%>%
+    filter(latest==1
+           ,geogConcat=="England"
+           ,metric =='Employed'
+           ,breakdown %in% c("4-digit occupation SOC2020","4-digit occupation SOC2010","Total")
+           ,breakdown2=="Total"
+           )%>%
+    mutate(breakdown=case_when(breakdown== "Total" & chartPeriod=="Jan 2022-Dec 2022" ~ "4-digit occupation SOC2020"
+                               ,breakdown== "Total" & chartPeriod=="Jan 2020-Dec 2020" ~ "4-digit occupation SOC2010"
+                               ,TRUE ~ breakdown))%>%
+    select(subgroup,breakdown,Employed=value)%>%
+    #add growth
+    left_join(C_localSkillsDataset%>%
+                filter(latest==-1
+                       ,geogConcat=="England"
+                       ,metric =='Employed'
+                       ,breakdown %in% c("4-digit occupation SOC2020","4-digit occupation SOC2010","Total")
+                       ,breakdown2=="Total"
+                )%>%
+                mutate(breakdown=case_when(breakdown== "Total" & chartPeriod=="Jan 2021-Dec 2021" ~ "4-digit occupation SOC2020"
+                                           ,breakdown== "Total" & chartPeriod=="Jan 2019-Dec 2019" ~ "4-digit occupation SOC2010"
+                                           ,TRUE ~ breakdown))%>%
+                select(subgroup,breakdown,EmployedLast=value))%>%
+    mutate(growth=(Employed-EmployedLast)/EmployedLast)%>%
+    #select(-EmployedLast)%>%
+    #add % female
+    left_join(C_localSkillsDataset%>%
+                filter(latest==1
+                       ,geogConcat=="England"
+                       ,metric =='Employed'
+                       ,((breakdown %in% c("4-digit occupation SOC2020","4-digit occupation SOC2010")&subgroup2=="Females")|
+                breakdown=="Sex"&subgroup=="Females")
+                )%>%
+                mutate(breakdown=case_when(chartPeriod=="Jan 2022-Dec 2022" ~ "4-digit occupation SOC2020"
+                                           ,chartPeriod=="Jan 2020-Dec 2020" ~ "4-digit occupation SOC2010"
+                                           ,TRUE ~ breakdown)
+                       ,subgroup=case_when(subgroup=="Females" ~ "Total"
+                                           ,TRUE ~ subgroup))%>%
+                select(subgroup,breakdown,EmployedFemale=value))%>%
+    mutate(femalePerc=EmployedFemale/Employed)#%>%
+    #select(-EmployedFemale)
+    #occupation split by region 
+  occSplitByRegion<-
+      C_localSkillsDataset%>%
+                filter(latest==1
+                       ,geogConcat!="England"
+                       ,metric =='Employed'
+                       ,breakdown %in% c("4-digit occupation SOC2020","4-digit occupation SOC2010","Total")
+                       
+                       ,subgroup2=="Total"
+                       #,subgroup!="Total"
+                )%>%
+    mutate(breakdown=case_when(breakdown== "Total" & chartPeriod=="Jan 2022-Dec 2022" ~ "4-digit occupation SOC2020"
+                               ,breakdown== "Total" & chartPeriod=="Jan 2020-Dec 2020" ~ "4-digit occupation SOC2010"
+                               ,TRUE ~ breakdown))%>%
+                select(geogConcat,breakdown,subgroup,value)%>%
+                group_by(subgroup,breakdown)%>%
+                mutate(occSplitByRegion =  value/sum(value, na.rm=TRUE)) %>% 
+                ungroup%>%select(-value)
+  #comapre to natinal splpit
+  Underepresented<-occSplitByRegion%>%filter(subgroup!="Total")%>%
+    left_join(occSplitByRegion%>%filter(subgroup=="Total")%>%select(-subgroup)%>%rename(allOccsSplitByRegion=occSplitByRegion))%>%
+    mutate(representation=occSplitByRegion-allOccsSplitByRegion)%>%
+    group_by(subgroup,breakdown)%>%
+    arrange(representation)%>%
+    slice(1)%>%
+    select(subgroup,breakdown,Underepresented=geogConcat)
+  Overepresented<-occSplitByRegion%>%filter(subgroup!="Total")%>%
+    left_join(occSplitByRegion%>%filter(subgroup=="Total")%>%select(-subgroup)%>%rename(allOccsSplitByRegion=occSplitByRegion))%>%
+    mutate(representation=occSplitByRegion-allOccsSplitByRegion)%>%
+    group_by(subgroup,breakdown)%>%
+    arrange(desc(representation))%>%
+    slice(1)%>%
+    select(subgroup,breakdown,Overepreseneted=geogConcat)
+
+  #add on earnings
+  Earnings<-C_localSkillsDataset%>%
+                filter(latest==1
+                       ,geogConcat=="England"
+                       ,metric =='Earnings'
+                       ,breakdown %in% c("4-digit occupation SOC2020","4-digit occupation SOC2010","Total")
+                       ,breakdown2=="Total"
+                )%>%
+                mutate(breakdown=case_when(breakdown== "Total" & chartPeriod=="Jan 2021-Dec 2021" ~ "4-digit occupation SOC2020"
+                                           ,breakdown== "Total" & chartPeriod=="Jan 2019-Dec 2019" ~ "4-digit occupation SOC2010"
+                                           ,TRUE ~ breakdown))%>%
+                select(subgroup,breakdown,Earnings=value,population)
+  #earnings growth
+  EarningsGrowth<-C_localSkillsDataset%>%
+    filter(latest==-1
+           ,geogConcat=="England"
+           ,metric =='Earnings'
+           ,breakdown %in% c("4-digit occupation SOC2020","4-digit occupation SOC2010","Total")
+           ,breakdown2=="Total"
+    )%>%
+    mutate(breakdown=case_when(breakdown== "Total" & chartPeriod=="Jan 2021-Dec 2021" ~ "4-digit occupation SOC2020"
+                               ,breakdown== "Total" & chartPeriod=="Jan 2019-Dec 2019" ~ "4-digit occupation SOC2010"
+                               ,TRUE ~ breakdown))%>%
+    select(subgroup,breakdown,EarningsLast=value,populationLast=population)
+  
+  #add on to table
+  C_table<-Employment%>%
+    left_join(Underepresented)%>%
+    left_join(Overepresented)%>%
+    left_join(Earnings)%>%
+    left_join(EarningsGrowth)%>%
+    mutate(growthEarn=(Earnings-EarningsLast)/EarningsLast
+           ,subgroup=case_when(subgroup=="Total" ~ "All occupations"
+                               ,TRUE ~ subgroup)
+           ,EarnPop=Earnings*population
+           ,EarnPopLast=EarningsLast*populationLast)%>%
+    select(-EarningsLast)
+      
+  write.csv(C_table, file = "Data\\AppData\\C_table.csv", row.names = FALSE)
 
 # ### 4.2.1 Axis min and max ----
 # # Create max and min for each metric used in setting axis on the overview page
@@ -950,31 +1196,31 @@ C_time <- C_localSkillsDataset %>%
 #   )) # for the emp projections page we use two metrics on different charts. we give them the same name so the filters work
 # write.csv(C_breakdown, file = "Data\\AppData\\C_breakdown.csv", row.names = FALSE)
 # 
-# ### 4.3.1 Find top ten for each breakdown ----
-# # (these are chosen in the filter)
-# # get a list of summary and detailed professions
-# C_detailLookup <- advertsWithAreas %>% distinct(`Summary Profession Category`, `Detailed Profession Category`)
-# write.csv(C_detailLookup, file = "Data\\AppData\\C_detailLookup.csv", row.names = FALSE)
-# 
-# C_topTenEachBreakdown <-
-#   bind_rows(
-#     C_breakdown %>%
-#       filter(str_sub(geogConcat, -4, -1) != "LADU") %>%
-#       group_by(metric, breakdown, geogConcat) %>%
-#       arrange(desc(value)) %>%
-#       slice(1:10)
-#       %>%
-#       mutate(`Summary Profession Category` = "All"),
-#     C_breakdown %>%
-#       filter(breakdown == "Detailed Profession Category", str_sub(geogConcat, -4, -1) != "LADU") %>%
-#       left_join(C_detailLookup, by = c("subgroup" = "Detailed Profession Category")) %>%
-#       group_by(geogConcat, metric, breakdown, `Summary Profession Category`) %>%
-#       arrange(desc(value)) %>%
-#       slice(1:10)
-#   ) %>%
-#   select(metric, breakdown, geogConcat, subgroup, `Summary Profession Category`)
-# write.csv(C_topTenEachBreakdown, file = "Data\\AppData\\C_topTenEachBreakdown.csv", row.names = FALSE)
-# 
+ ### 4.3.1 Find top ten for each breakdown ----
+# (these are chosen in the filter)
+# get a list of summary and detailed professions
+C_detailLookup <- advertsWithAreas %>% distinct(`Summary Profession Category`, `Detailed Profession Category`)
+write.csv(C_detailLookup, file = "Data\\AppData\\C_detailLookup.csv", row.names = FALSE)
+
+C_topTenEachBreakdown <-
+    F_empOcc2020%>%filter(latest==1)%>%#order by the latest year
+      inner_join(I_stemLookup)%>%
+      filter(subgroup!="Total")%>% 
+      group_by(metric, breakdown, geogConcat) %>%
+      arrange(desc(value)) %>%
+      slice(1:10)%>%
+  select(metric,breakdown,subgroup, geogConcat,Sector)
+  #     mutate(`Summary Profession Category` = "All"),
+  #   C_breakdown %>%
+  #     filter(breakdown == "Detailed Profession Category", str_sub(geogConcat, -4, -1) != "LADU") %>%
+  #     left_join(C_detailLookup, by = c("subgroup" = "Detailed Profession Category")) %>%
+  #     group_by(geogConcat, metric, breakdown, `Summary Profession Category`) %>%
+  #     arrange(desc(value)) %>%
+  #     slice(1:10)
+  # ) %>%
+  # select(metric, breakdown, geogConcat, subgroup, `Summary Profession Category`)
+write.csv(C_topTenEachBreakdown, file = "Data\\AppData\\C_topTenEachBreakdown.csv", row.names = FALSE)
+
 # ## 4.4 C_dataHub ----
 # # This is used in the data explorer page
 # C_datahub <- C_localSkillsDataset %>%

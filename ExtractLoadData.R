@@ -18,6 +18,7 @@ library(sf) # use st_read
 library(tidyverse) # use map_df, mutate
 library(nomisr) # use nomis api
 library(data.table) # use %like%
+library(readxl)# read xls
 
 # 1.Geography and mapping tables ----
 ## 1.1 LEPs 2020 and LA%20LSIP lookup ----
@@ -57,6 +58,13 @@ folder <- "1-7_MCABoundary"
 I_mapMCA <- sf::st_read(paste0("./Data/", folder, "/", list.files(path = paste0("./Data/", folder))),
   stringsAsFactors = F
 )
+
+## 1.8 Region boundary----
+folder <- "D_regionBoundary"
+I_mapRegion <- sf::st_read(paste0("./Data/", folder, "/", list.files(path = paste0("./Data/", folder))),
+                        stringsAsFactors = F
+)%>%
+  sf::st_transform('+proj=longlat +datum=WGS84')
 
 # 2. Datasets ----
 ## 2.1 Nomis datasets ----
@@ -98,15 +106,67 @@ cellsListAps <- nomis_get_metadata(id = "NM_17_1", concept = "CELL")
 ### 2.1.1 Employment by occupation ----
 # Query data
 # Geography: England, LEPs, regions, LADs (as of April 2021)
-# Date: 12 months to Dec 2017-2021. The latest data is not available so use the last 5 Jan-Decs
+# Date: 12 months to Dec 2021-2022. Older data is not availabel at SOC2020
 # Cell: T09a Employment by occupation (SOC2010) sub-major group and full-time/part-time; All people/ All people
 # find cells we want
-cellsUseAps_empOcc <- cellsListAps %>% filter(description.en %like% "T09a:" & description.en %like% "All people - ")
-# get data
-I_empOcc <-
-  extractNomis("NM_17_1", "2017-12,2018-12,2019-12,2020-12,2021-12", cellsUseAps_empOcc$id) %>%
-  filter(str_sub(CELL_NAME, -12, -1) == "All people )") # ignore part time
+# cellsUseAps_empOcc <- cellsListAps %>% filter(description.en %like% "T09a:" & description.en %like% "All people - ")
+# # get data
+# I_empOcc <-
+#   extractNomis("NM_17_1", "2017-12,2018-12,2019-12,2020-12,2021-12", cellsUseAps_empOcc$id) %>%
+#   filter(str_sub(CELL_NAME, -12, -1) == "All people )") # ignore part time
 
+#Get last 5 years of employment count by 1) soc2020, 2) sex
+I_empOcc2010<-nomis_get_data(
+  id = "NM_168_1"
+  , date = "latestMINUS16,latestMINUS12,latestMINUS8,latestMINUS4,latest"
+  , geography = "2092957699,2013265921...2013265932"
+  , C_SEX = "0...2"#cellsUseAps_empOcc$id
+  , c_occpuk11h_0="0,1000001,100000,10000,1,2,10001,3...5,10002,6...12,10003,13,10004,14,15,10005,16...18,10006,19,20,10007,21,100001,10008,22,23,10009,24...28,10010,29,30,10011,31...36,2000000,200000,20000,37...41,20001,42...48,20002,49...54,20003,55,56,20004,57,2000001,20005,58...66,20006,67...70,20007,71,72,200002,20008,73...80,200003,20009,81...83,20010,84...89,20011,90...95,20012,96...99,20013,100,101,20014,102...104,20015,105...107,3000000,300000,30000,108...114,30001,115,116,30002,117,118,300001,30003,119...123,30004,124...128,300003,30005,129...134,300004,30006,135...141,30007,142,143,30008,144...146,300005,30009,147...149,30010,150,30011,151...159,30012,160...165,30013,166,30014,167...172,4000000,400000,40000,173...175,40001,176...180,40002,181...186,40003,187,188,40004,189,190,400001,40005,191...197,5000000,500000,50000,198...202,500001,50001,203...208,50002,209...213,50003,214...219,50004,220...224,50005,225,500005,50006,226...232,50007,233...235,50008,236,500009,50009,237...241,50010,242...244,50011,245...250,50012,251...254,6000000,600000,60000,255...259,60001,260...262,60002,263...270,600002,60003,271...275,60004,276,277,60005,278,279,60006,280,7000000,700000,70000,281...285,70001,286...291,70002,292,700002,70003,293...297,70004,298,8000000,800000,80000,299...307,80001,308...315,80002,316...322,80003,323...326,800002,80004,327...331,80005,332...335,80006,336...340,9000000,900000,90000,341...343,90001,344,90002,345...347,900002,90003,348,349,90004,350...356,90005,357...360,90006,361,362,90007,363,90008,364...369"
+)
+
+#Get last 2 years of employment count by 1) soc2020, 2) sex
+I_empOcc2020<-nomis_get_data(
+  id = "NM_218_1"
+  , date = "latestMINUS4,latest"
+  , geography = "2092957699,2013265921...2013265932"
+  , C_SEX = "0...2"
+  , jtype="0"
+  , ftpt="0"
+  , etype="0"
+  , soc2020_full="0,1000001,100000,10000,1,2,10001,3...5,10002,6...13,10003,14,10004,15,10005,16...18,10006,19,20,100001,10007,21,22,10008,23...27,10009,28...30,10010,31...33,10011,34...42,2000000,200000,10012,43...48,10013,49...56,10014,57...64,10015,65,66,10016,67,68,10017,69,70,200001,10018,71,72,10019,73...79,10020,80...86,10021,87,10022,88...94,200002,10023,95...102,10024,103...107,200003,10025,108...110,10026,111...113,10027,114...119,10028,120,10029,121...125,10030,126...130,10031,131,132,10032,133...135,10033,136...139,3000000,300000,10034,140...146,10035,147,10036,148...150,300001,10037,151...155,10038,156...160,10039,161,162,10040,163,300002,10041,164...168,300003,10042,169...175,10043,176...178,10044,179...181,300004,10045,182,183,10046,184,10047,185...188,10048,189...193,10049,194...200,10050,201,10051,202...205,10052,206,207,4000000,400000,10053,208...210,10054,211...215,10055,216...221,10056,222...224,10057,225...227,400001,10058,228...234,5000000,500000,10059,235...239,500001,10060,240...243,10061,244...248,10062,249...254,10063,255...261,10064,262,500002,10065,263...270,10066,271...273,10067,274,500003,10068,275...278,10069,279...281,10070,282...287,10071,288...291,6000000,600000,10072,292...297,10073,298,299,10074,300...307,600001,10075,308...312,10076,313,314,10077,315,316,10078,317,10079,318,600002,10080,319,320,7000000,700000,10081,321...325,10082,326...331,10083,332,333,700001,10084,334...338,10085,339,8000000,800000,10086,340...345,10087,346,10088,347...352,10089,353...359,10090,360...363,10091,364,800001,10092,365...370,10093,371...373,10094,374...378,9000000,900000,10095,379...381,10096,382,383,10097,384...386,900001,10098,387,388,10099,389...395,10100,396...398,10101,399,400,10102,401...404,10103,405...412"
+)
+### 2.2.1 Ashe earnings data ----
+# https://www.ons.gov.uk/employmentandlabourmarket/peopleinwork/earningsandworkinghours/datasets/occupation4digitsoc2010ashetable14
+ folder <- "B_AsheEarnings22"
+ sheet <- "All"
+ I_ashe17 <- read_excel(paste0("./Data/", folder, "/", list.files(path = paste0("./Data/", folder))[1]), sheet = sheet)
+ I_ashe18 <- read_excel(paste0("./Data/", folder, "/", list.files(path = paste0("./Data/", folder))[2]), sheet = sheet)
+ I_ashe19 <- read_excel(paste0("./Data/", folder, "/", list.files(path = paste0("./Data/", folder))[3]), sheet = sheet)
+ I_ashe20 <- read_excel(paste0("./Data/", folder, "/", list.files(path = paste0("./Data/", folder))[4]), sheet = sheet)
+ I_ashe21 <- read_excel(paste0("./Data/", folder, "/", list.files(path = paste0("./Data/", folder))[5]), sheet = sheet)
+ I_ashe22 <- read_excel(paste0("./Data/", folder, "/", list.files(path = paste0("./Data/", folder))[6]), sheet = sheet)
+
+ sheet <- "Male"
+ I_asheMale17 <- read_excel(paste0("./Data/", folder, "/", list.files(path = paste0("./Data/", folder))[1]), sheet = sheet)
+ I_asheMale18 <- read_excel(paste0("./Data/", folder, "/", list.files(path = paste0("./Data/", folder))[2]), sheet = sheet)
+ I_asheMale19 <- read_excel(paste0("./Data/", folder, "/", list.files(path = paste0("./Data/", folder))[3]), sheet = sheet)
+ I_asheMale20 <- read_excel(paste0("./Data/", folder, "/", list.files(path = paste0("./Data/", folder))[4]), sheet = sheet)
+ I_asheMale21 <- read_excel(paste0("./Data/", folder, "/", list.files(path = paste0("./Data/", folder))[5]), sheet = sheet)
+ I_asheMale22 <- read_excel(paste0("./Data/", folder, "/", list.files(path = paste0("./Data/", folder))[6]), sheet = sheet)
+
+ sheet <- "Female"
+ I_asheFemale17 <- read_excel(paste0("./Data/", folder, "/", list.files(path = paste0("./Data/", folder))[1]), sheet = sheet)
+ I_asheFemale18 <- read_excel(paste0("./Data/", folder, "/", list.files(path = paste0("./Data/", folder))[2]), sheet = sheet)
+ I_asheFemale19 <- read_excel(paste0("./Data/", folder, "/", list.files(path = paste0("./Data/", folder))[3]), sheet = sheet)
+ I_asheFemale20 <- read_excel(paste0("./Data/", folder, "/", list.files(path = paste0("./Data/", folder))[4]), sheet = sheet)
+ I_asheFemale21 <- read_excel(paste0("./Data/", folder, "/", list.files(path = paste0("./Data/", folder))[5]), sheet = sheet)
+ I_asheFemale22 <- read_excel(paste0("./Data/", folder, "/", list.files(path = paste0("./Data/", folder))[6]), sheet = sheet)
+ 
+ ### 2.2.2 Soc - stem lookup ----
+ folder <- "C_stemLookup"
+ I_stemLookup <- read.csv(file = paste0("./Data/", folder, "/", list.files(path = paste0("./Data/", folder))))
+ 
+  
 ### 2.1.2 Employment level and rate ------------
 # Geog and date as above
 # Cell: T01 Economic activity by age Aged 16-64/ All people

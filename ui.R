@@ -251,6 +251,7 @@ div.myspecial-popup div.leaflet-popup-content-wrapper {
       fluidRow(column(
         12,
         h1("Occupations Dashboard"),
+        p("THIS PAGE IS NOT UP TO DATE. IT'S JUST A PLACEHOLDER"),
         p(
           "The Occupations dashboard provides published occupation data from a variety of sources in an easy to navigate format. "
         ),
@@ -381,50 +382,48 @@ div.myspecial-popup div.leaflet-popup-content-wrapper {
       "Occupations",
       br(),
       ### 2.3.1 Filters ----
+      fluidRow(column(9,
+                      p("The latest occupation coding SOC2020 is only available for the past two years. If you would like a longer time series, switch to SOC2010. Currently sectors are only mapped to SOC2020."),
+      ),
+      column(
+        3,
+        uiOutput("screenshotFile")
+      )),
+      fluidRow(column(4,
+      radioGroupButtons(
+        inputId = "codeChoice",
+        choices = c("SOC2010", "SOC2020")
+        ,selected="SOC2020"
+      )
+      )
+      ),
       fluidRow(column(4,
                       p("Sector"),
-                      materialSwitch(inputId = "sectorSwitch", label = NULL, status = "primary"),
                       selectizeInput(
                         "sectorChoice",
                         multiple = TRUE,
                         label = NULL,
-                        choices = c("Science and Tech","Green")
-                        ,selected="Science and Tech"
+                        choices = c("Science and tech")
+                        #,selected="Science and Tech"
                       )
                       ),
         column(
           4,
-          p("Occupations (SOC submajor)"),
-          materialSwitch(inputId = "socSwitch", label = NULL, status = "primary"),
-          selectizeInput(
-            "socChoice",
-            multiple = TRUE,
+          p("Occupations"),
+          pickerInput(
+            inputId = "socChoice",
             label = NULL,
-            choices = C_time%>%
-              filter(metric=="Jobs")%>%
-            distinct(subgroup)
-            ,selected="Corporate managers and directors"
+            choices =
+              C_time%>%
+              filter(breakdown %in% c("4-digit occupation SOC2020"))%>%
+              distinct(subgroup),
+            multiple = TRUE,
+            options = list(`actions-box` = TRUE, `live-search` = TRUE)
           )
+          
+          
         ),
-      column(
-        4,
-        p("Demographies"),
-        materialSwitch(inputId = "demSwitch", label = NULL, status = "primary"),
-        selectizeInput(
-          "demChoice",
-          multiple = TRUE,
-          label = NULL,
-          choices = c("region","full-time/part-time","industry (SIC 2007)","flexibility","Ethnic group")
-          ,selected="Ethnic group"
-        ),
-        selectInput(
-          "ethChoice",
-          multiple = TRUE,
-          label = NULL,
-          choices = c("White","Mixed")
-          ,selected="Mixed"
-        )
-      ),
+
         # column(          4,
         #                  p("Choose an occupation(s) (Summary Profession Category)"),
         #                  selectizeInput(
@@ -435,64 +434,92 @@ div.myspecial-popup div.leaflet-popup-content-wrapper {
         #                      filter(metric=="Online job adverts")%>%
         #                      distinct(subgroup)
         #                  )),
-        # column(
-        #   3,
-        #   uiOutput("screenshotFile")
-        # )
-      ),
-      # fluidRow(
-      #   column(
-      #     12,
-      #     p(uiOutput("subheading"))
-      #   )
-      # ),
-      fluidRow(
-        column(
-          4,
-          materialSwitch(inputId = "gridSwitch", label = "Grid charts", status = "primary",right=TRUE),
 
-          materialSwitch(inputId = "changeSwitch", label = "Annual change", status = "primary",right=TRUE)
-        )),
+      ),
       ### 2.3.2 Visuals row 1 ----
       fluidRow(
         column(
           12,
-           h3("How is employment changing over time?"),
-          # p(uiOutput("commentTime")),
-          # uiOutput("geoComp"),
+          #h3(""),
+          withSpinner(dataTableOutput("OccTbl"))
+        )
+      ),
+      fluidRow(column(12,
+                      p(uiOutput("dataPeriodComment"))   
+      )),
+      fluidRow(column(12,
+                      h3("How is employment changing over time?"),
+                      p("Turn off switches to clear up the charts"))),
+      fluidRow(
+        column(4,
+               p("Sector"),
+               materialSwitch(inputId = "sectorSwitch", label = NULL, status = "primary", value=TRUE)),
+               column(4,
+                p("Occupations"),
+               materialSwitch(inputId = "occSwitch", label = NULL, status = "primary", value=TRUE),
+               fluidRow(column(6,p("Show top x jobs")),
+               column(5,numericInput("numOccs", NULL, 5, min = 1, max = 100))
+               )),
+        # column(
+        #   4,
+        #   materialSwitch(inputId = "gridSwitch", label = "Grid charts", status = "primary",right=TRUE),
+        #   
+        #   materialSwitch(inputId = "changeSwitch", label = "Annual change", status = "primary",right=TRUE)
+        # ),
+        column(
+          4,
+          p("Demographies"),
+          materialSwitch(inputId = "demSwitch", label = NULL, status = "primary",value=TRUE),
+          selectizeInput(
+            "demChoice",
+            multiple = TRUE,
+            label = NULL,
+            choices = c("Sex")
+          ),
+          # selectInput(
+          #   "ethChoice",
+          #   multiple = TRUE,
+          #   label = NULL,
+          #   choices = c("Males","Females")
+          # )
+        )),
+      fluidRow(
+        column(
+          12,
           withSpinner(plotlyOutput("occTime")),
           p("NB non-zero axis.")
         )
       ),
       fluidRow(column(
         12,
-        h3("How are earnings changing over time?")
+        h3("How are earnings changing over time?"),
+        withSpinner(plotlyOutput("earnTime")),
+        p("NB non-zero axis.")
       )),
       fluidRow(column(
         12,
-        h3("How is employment different across the England?")
+        h3("How is employment different across England?")
       )),
       fluidRow(
         column(
           4,
-          p("Choose a geography"),
-          radioGroupButtons(
-            inputId = "splashGeoType",
-            choices = c("LEP", "LSIP", "MCA")
-          ),
-          # p(uiOutput("commentMap")),
-
-          # p(uiOutput("mapFoot"))
+          p("Choose an occupation from your list"),
+          selectizeInput("mapOccChoice",
+                         label = NULL,
+                         choices = NULL
+          )
         ),
         column(          4,
                          p("Choose a year"),
-                         sliderInput(
-                           "timeChoice",NULL,min=2017,max=2021,value=2021,sep=""
+                         #sliderInput(
+  #                         "timeChoice",NULL,min=2017,max=2021,value=2021,sep=""
                            #multiple = TRUE,
-                           #label = NULL,
-                           # choices = C_mapData%>%
+  selectizeInput("timeChoice",
+                           label = NULL,
+                            choices = (C_mapData%>%
                            #   filter(metric=="Jobs")%>%
-                           #   distinct(chartPeriod)
+                              distinct(chartPeriod))$chartPeriod
+                 ,selected = "Jan 2022-Dec 2022"
                          ))
 
       ),
@@ -503,42 +530,71 @@ div.myspecial-popup div.leaflet-popup-content-wrapper {
       ),
       br(),
       ### 2.3.3 Downloads ----
+  p("Downloads don't yet work for built groups"),
       fluidRow(
         column(
           width = 3,
           downloadButton(
             outputId = "downloadV1All",
-            label = "All areas   ",
+            label = "Download   ",
             icon = shiny::icon("download"),
             class = "downloadButton"
           )
         ),
         column(
           width = 9,
-          "Download metric data for all geographies (LEPs, LSIP, MCA areas, LAs, regions and England)",
+          "Download the data within the table, the charts and the the map",
         )
       ),
-      fluidRow(
-        column(
-          width = 3,
-          downloadButton(
-            outputId = "downloadV1Current",
-            label = "Current geographic areas",
-            icon = shiny::icon("download"),
-            class = "downloadButton"
-          )
-        ),
-        column(width = 9, "Download metric data for the selected geographic areas")
-      ),
-      ### 2.3.3 Data notes ----
+      # fluidRow(
+      #   column(
+      #     width = 3,
+      #     downloadButton(
+      #       outputId = "downloadV1Current",
+      #       label = "Current geographic areas",
+      #       icon = shiny::icon("download"),
+      #       class = "downloadButton"
+      #     )
+      #   ),
+      #   column(width = 9, "Download metric data for the selected geographic areas")
+      # ),
+      # fluidRow(column(
+      #   12,
+      #   p("SOC digits"),
+      #   radioGroupButtons(
+      #     inputId = "socNumChoice",
+      #     choices = c(1, 2, 3, 4)
+      #     ,selected=4
+      #   ),
+
+      br()
+    ),
+    
+    ## 2.3 Group builkdet ----
+    tabPanel(
+      "Group builder",
+      br(),
+      p("Create your group by selecting occupations and giving your group a name. The group will then appear in the Sector dropdown of the Occupations tab. It may take a few seconds to recalculate the summary stats."),
+      ### 2.3.1 Filters ----
       fluidRow(column(
-        12,
-        h2("Data notes"),
-        # p(uiOutput("dataSource")),
-        # p(uiOutput("dataNote")),
-        # p("Caveats:"),
-        # p(uiOutput("dataCaveat"))
-      )),
+        4,
+        p("Select your occupations"),
+        pickerInput(
+          inputId = "occGroup",
+          label = NULL,
+          choices =
+            (C_time%>%
+            filter(breakdown =="4-digit occupation SOC2020")%>%
+            distinct(subgroup)%>%
+            arrange(subgroup))$subgroup,
+          multiple = TRUE,
+          options = list(`actions-box` = TRUE, `live-search` = TRUE)
+        )
+      ),
+      column(4,
+             p("Give your group a name"),
+             textInput("occGroupName", NULL, NULL))
+      ),
       br()
     ),
 
@@ -549,6 +605,7 @@ div.myspecial-popup div.leaflet-popup-content-wrapper {
       fluidRow(column(
         12,
         h1("Data sources"),
+        p("THIS PAGE IS NOT UP TO DATE. IT'S JUST A PLACEHOLDER"),
         dataTableOutput("DataTbl"),
         uiOutput("hidden_downloads")
       )),

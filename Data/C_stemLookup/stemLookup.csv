@@ -1,0 +1,145 @@
+﻿SOC2020code,SOC2020desc,Sector,Source
+1111,Chief executives and senior officials,Science and tech,UFS STEM List
+1112,Elected officers and representatives,Science and tech,UFS STEM List
+1121,Production managers and directors in manufacturing,Science and tech,UFS STEM List
+1122,Production managers and directors in construction,Science and tech,UFS STEM List
+1123,Production managers and directors in mining and energy,Science and tech,UFS STEM List
+1131,Financial managers and directors,Science and tech,UFS STEM List
+1132,"Marketing, sales and advertising directors",Science and tech,UFS STEM List
+1133,Public relations and communications directors,Science and tech,UFS STEM List
+1134,Purchasing managers and directors,Science and tech,UFS STEM List
+1135,Charitable organisation managers and directors,Science and tech,UFS STEM List
+1136,Human resource managers and directors,Science and tech,UFS STEM List
+1137,Information technology directors,Science and tech,UFS STEM List
+1139,Functional managers and directors n.e.c.,Science and tech,UFS STEM List
+1171,Health services and public health managers and directors,Science and tech,UFS STEM List
+1172,Social services managers and directors,Science and tech,UFS STEM List
+1211,Managers and proprietors in agriculture and horticulture,Science and tech,UFS STEM List
+1212,"Managers and proprietors in forestry, fishing and related services",Science and tech,UFS STEM List
+1231,Health care practice managers,Science and tech,UFS STEM List
+1232,"Residential, day and domiciliary care managers and proprietors",Science and tech,UFS STEM List
+1243,Managers in logistics,Science and tech,UFS STEM List
+2111,Chemical scientists,Science and tech,UFS STEM List
+2112,Biological scientists,Science and tech,UFS STEM List
+2113,Biochemists and biomedical scientists,Science and tech,UFS STEM List
+2114,Physical scientists,Science and tech,UFS STEM List
+2115,Social and humanities scientists,Science and tech,UFS STEM List
+2119,Natural and social science professionals n.e.c.,Science and tech,UFS STEM List
+2121,Civil engineers,Science and tech,UFS STEM List
+2122,Mechanical engineers,Science and tech,UFS STEM List
+2123,Electrical engineers,Science and tech,UFS STEM List
+2124,Electronics engineers,Science and tech,UFS STEM List
+2125,Production and process engineers,Science and tech,UFS STEM List
+2126,Aerospace engineers,Science and tech,UFS STEM List
+2127,Engineering project managers and project engineers,Science and tech,UFS STEM List
+2129,Engineering professionals n.e.c.,Science and tech,UFS STEM List
+2131,IT project managers,Science and tech,UFS STEM List
+2132,IT managers,Science and tech,UFS STEM List
+2133,"IT business analysts, architects and systems designers",Science and tech,UFS STEM List
+2134,Programmers and software development professionals ,Science and tech,UFS STEM List
+2135,Cyber security professionals,Science and tech,UFS STEM List
+2136,IT quality and testing professionals,Science and tech,UFS STEM List
+2137,IT network professionals,Science and tech,UFS STEM List
+2139,Information technology professionals n.e.c.,Science and tech,UFS STEM List
+2141,Web design professionals,Science and tech,UFS STEM List
+2151,Conservation professionals,Science and tech,UFS STEM List
+2152,Environment professionals,Science and tech,UFS STEM List
+2161,Research and development (R&D) managers ,Science and tech,UFS STEM List
+2162,"Other researchers, unspecified discipline",Science and tech,UFS STEM List
+2211,Generalist medical practitioners,Science and tech,UFS STEM List
+2212,Specialist medical practitioners,Science and tech,UFS STEM List
+2221,Physiotherapists,Science and tech,UFS STEM List
+2222,Occupational therapists,Science and tech,UFS STEM List
+2223,Speech and language therapists,Science and tech,UFS STEM List
+2224,Psychotherapists and cognitive behaviour therapists,Science and tech,UFS STEM List
+2225,Clinical psychologists,Science and tech,UFS STEM List
+2226,Other psychologists,Science and tech,UFS STEM List
+2229,Therapy professionals n.e.c.,Science and tech,UFS STEM List
+2231,Midwifery nurses,Science and tech,UFS STEM List
+2232,Community nurses,Science and tech,UFS STEM List
+2233,Specialist nurses,Science and tech,UFS STEM List
+2234,Nurse practitioners,Science and tech,UFS STEM List
+2235,Mental health nurses,Science and tech,UFS STEM List
+2236,Children's nurses,Science and tech,UFS STEM List
+2237,Other nursing professionals ,Science and tech,UFS STEM List
+2240,Veterinarians,Science and tech,UFS STEM List
+2251,Pharmacists,Science and tech,UFS STEM List
+2252,Optometrists,Science and tech,UFS STEM List
+2253,Dental practitioners,Science and tech,UFS STEM List
+2254,Medical radiographers,Science and tech,UFS STEM List
+2255,Paramedics,Science and tech,UFS STEM List
+2256,Podiatrists,Science and tech,UFS STEM List
+2259,Other health professionals n.e.c.,Science and tech,UFS STEM List
+2311,Higher education teaching professionals,Science and tech,UFS STEM List
+2313,Secondary education teaching professionals,Science and tech,UFS STEM List
+2421,Chartered and certified accountants,Science and tech,UFS STEM List
+2422,Finance and investment analysts and advisers,Science and tech,UFS STEM List
+2423,Taxation experts,Science and tech,UFS STEM List
+2431,Management consultants and business analysts,Science and tech,UFS STEM List
+2433,"Actuaries, economists and statisticians",Science and tech,UFS STEM List
+2434,Business and related research professionals,Science and tech,UFS STEM List
+2435,Professional/Chartered company secretaries ,Science and tech,UFS STEM List
+2439,"Business, research and administrative professionals n.e.c.",Science and tech,UFS STEM List
+2440,Business and financial project management professionals,Science and tech,UFS STEM List
+2451,Architects,Science and tech,UFS STEM List
+2452,"Chartered architectural technologists, planning officers and consultants",Science and tech,UFS STEM List
+2453,Quantity surveyors,Science and tech,UFS STEM List
+2454,Chartered surveyors,Science and tech,UFS STEM List
+2455,Construction project managers and related professionals,Science and tech,UFS STEM List
+2481,Quality control and planning engineers,Science and tech,UFS STEM List
+2482,Quality assurance and regulatory professionals,Science and tech,UFS STEM List
+2483,Environmental health professionals,Science and tech,UFS STEM List
+3111,Laboratory technicians,Science and tech,UFS STEM List
+3112,Electrical and electronics technicians ,Science and tech,UFS STEM List
+3113,Engineering technicians ,Science and tech,UFS STEM List
+3114,Building and civil engineering technicians ,Science and tech,UFS STEM List
+3115,Quality assurance technicians ,Science and tech,UFS STEM List
+3116,"Planning, process and production technicians",Science and tech,UFS STEM List
+3119,"Science, engineering and production technicians n.e.c.",Science and tech,UFS STEM List
+3120,"CAD, drawing and architectural technicians",Science and tech,UFS STEM List
+3131,IT operations technicians,Science and tech,UFS STEM List
+3132,IT user support technicians,Science and tech,UFS STEM List
+3133,Database administrators and web content technicians,Science and tech,UFS STEM List
+3211,Dispensing opticians,Science and tech,UFS STEM List
+3212,Pharmaceutical technicians,Science and tech,UFS STEM List
+3213,Medical and dental technicians,Science and tech,UFS STEM List
+3214,Complementary health associate professionals,Science and tech,UFS STEM List
+3219,Health associate professionals n.e.c.,Science and tech,UFS STEM List
+3531,Brokers,Science and tech,UFS STEM List
+3532,Insurance underwriters,Science and tech,UFS STEM List
+3533,Financial and accounting technicians,Science and tech,UFS STEM List
+3534,Financial accounts managers,Science and tech,UFS STEM List
+3541,"Estimators, valuers and assessors",Science and tech,UFS STEM List
+3542,Importers and exporters,Science and tech,UFS STEM List
+3543,Project support officers,Science and tech,UFS STEM List
+3544,Data analysts,Science and tech,UFS STEM List
+3549,Business associate professionals n.e.c.,Science and tech,UFS STEM List
+5111,Farmers,Science and tech,UFS STEM List
+5112,Horticultural trades,Science and tech,UFS STEM List
+5119,Agricultural and fishing trades n.e.c.,Science and tech,UFS STEM List
+5211,Sheet metal workers,Science and tech,UFS STEM List
+5212,"Metal plate workers, smiths, moulders and related occupations",Science and tech,UFS STEM List
+5213,Welding trades,Science and tech,UFS STEM List
+5214,Pipe fitters,Science and tech,UFS STEM List
+5221,Metal machining setters and setter-operators,Science and tech,UFS STEM List
+5222,"Tool makers, tool fitters and markers-out",Science and tech,UFS STEM List
+5223,Metal working production and maintenance fitters,Science and tech,UFS STEM List
+5224,Precision instrument makers and repairers,Science and tech,UFS STEM List
+5225,Air-conditioning and refrigeration installers and repairers,Science and tech,UFS STEM List
+5241,Electricians and electrical fitters,Science and tech,UFS STEM List
+5242,Telecoms and related network installers and repairers,Science and tech,UFS STEM List
+5243,"TV, video and audio servicers and repairers",Science and tech,UFS STEM List
+5244,Computer system and equipment installers and servicers,Science and tech,UFS STEM List
+5245,Security system installers and repairers,Science and tech,UFS STEM List
+5246,Electrical service and maintenance mechanics and repairers,Science and tech,UFS STEM List
+5249,Electrical and electronic trades n.e.c.,Science and tech,UFS STEM List
+5250,"Skilled metal, electrical and electronic trades supervisors",Science and tech,UFS STEM List
+5311,Steel erectors,Science and tech,UFS STEM List
+5312,Stonemasons and related trades,Science and tech,UFS STEM List
+5313,Bricklayers ,Science and tech,UFS STEM List
+5314,"Roofers, roof tilers and slaters",Science and tech,UFS STEM List
+5315,Plumbers & heating and ventilating installers and repairers,Science and tech,UFS STEM List
+5316,Carpenters and joiners,Science and tech,UFS STEM List
+5317,"Glaziers, window fabricators and fitters",Science and tech,UFS STEM List
+5319,Construction and building trades n.e.c.,Science and tech,UFS STEM List
+5330,Construction and building trades supervisors,Science and tech,UFS STEM List
