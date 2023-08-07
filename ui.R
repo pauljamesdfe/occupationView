@@ -449,7 +449,7 @@ div.myspecial-popup div.leaflet-popup-content-wrapper {
       )),
       fluidRow(column(12,
                       h3("How is employment changing over time?"),
-                      p("Turn off switches to clear up the charts"))),
+                      p("Turn off switches to clear up the charts. Click on items in the legend to add or remove them."))),
       fluidRow(
         column(4,
                p("Sector"),
